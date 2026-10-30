@@ -1,0 +1,18 @@
+# Local Python and IDE files
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+*.iml
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+# Generated simulator output and submission archives
+*.out
+*.zip
+*.bak
+# Local secrets
+.env
+.env.*
+!.env.example

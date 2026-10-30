@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+.DS_Store
+*.asm
+*.out
+*.cmp
+*.tst
+*.zip

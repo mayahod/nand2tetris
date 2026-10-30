@@ -1,0 +1,17 @@
+# NAND2Tetris generated output
+*.out
+
+# Course comparison/test files are kept outside the portfolio repo
+*.cmp
+*.tst
+
+# Machine-code fixtures
+*.hack
+
+# IDE / OS metadata
+.idea/
+.vscode/
+.DS_Store
+
+# Archives
+*.zip

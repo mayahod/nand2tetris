@@ -1,0 +1,77 @@
+// This file is part of nand2tetris, as taught in The Hebrew University, and
+// was written by Aviv Yaish. It is an extension to the specifications given
+// [here](https://www.nand2tetris.org) (Shimon Schocken and Noam Nisan, 2017),
+// as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
+// Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
+
+/**
+ * Extended Hack ALU.
+ *
+ * When instruction[8]=1 and instruction[7]=1, the chip behaves like the
+ * regular ALU, using instruction[5..0] as zx,nx,zy,ny,f,no.
+ *
+ * When instruction[8]=0 and instruction[7]=1, the chip performs a shift:
+ * instruction[4] selects y (0) or x (1), and instruction[5] selects
+ * right shift (0) or left shift (1).
+ */
+
+CHIP ExtendAlu {
+    IN x[16], y[16], instruction[9];
+    OUT out[16], zr, ng;
+
+    PARTS:
+    // Standard ALU path.
+    ALU(
+        x=x,
+        y=y,
+        zx=instruction[5],
+        nx=instruction[4],
+        zy=instruction[3],
+        ny=instruction[2],
+        f=instruction[1],
+        no=instruction[0],
+        out=aluResult,
+        zr=aluZero,
+        ng=aluNegative
+    );
+
+    // Shift path.
+    ShiftRight(in=x, out=xShiftRight);
+    ShiftRight(in=y, out=yShiftRight);
+    ShiftLeft(in=x, out=xShiftLeft);
+    ShiftLeft(in=y, out=yShiftLeft);
+
+    // sel[0]=instruction[4] chooses y/x.
+    // sel[1]=instruction[5] chooses right/left.
+    Mux4Way16(
+        a=yShiftRight,
+        b=xShiftRight,
+        c=yShiftLeft,
+        d=xShiftLeft,
+        sel=instruction[4..5],
+        out=shiftResult
+    );
+
+    // 11 in bits [8..7] selects regular ALU mode.
+    And(a=instruction[8], b=instruction[7], out=useRegularAlu);
+    Mux16(a=shiftResult, b=aluResult, sel=useRegularAlu, out=out);
+
+    // Reuse the standard ALU as an identity operation to compute zr/ng
+    // for shift results.
+    ALU(
+        x=shiftResult,
+        y=false,
+        zx=false,
+        nx=false,
+        zy=false,
+        ny=false,
+        f=true,
+        no=false,
+        out=shiftIdentity,
+        zr=shiftZero,
+        ng=shiftNegative
+    );
+
+    Mux(a=shiftZero, b=aluZero, sel=useRegularAlu, out=zr);
+    Mux(a=shiftNegative, b=aluNegative, sel=useRegularAlu, out=ng);
+}

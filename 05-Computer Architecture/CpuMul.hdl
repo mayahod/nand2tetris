@@ -1,0 +1,74 @@
+// This file is part of nand2tetris, as taught in The Hebrew University, and
+// was written by Aviv Yaish. It is an extension to the specifications given
+// [here](https://www.nand2tetris.org) (Shimon Schocken and Noam Nisan, 2017),
+// as allowed by the Creative Common Attribution-NonCommercial-ShareAlike 3.0
+// Unported [License](https://creativecommons.org/licenses/by-nc-sa/3.0/).
+
+/**
+ * Extended Hack CPU that uses ExtendAlu and therefore supports the
+ * course-defined shift instructions in addition to regular Hack
+ * A- and C-instructions.
+ */
+
+CHIP CpuMul {
+    IN  inM[16],
+        instruction[16],
+        reset;
+
+    OUT outM[16],
+        writeM,
+        addressM[15],
+        pc[15];
+
+    PARTS:
+    // A-register input and destination logic.
+    Not(in=instruction[15], out=isAInstruction);
+    Or(a=isAInstruction, b=instruction[5], out=loadA);
+    Mux16(a=instruction, b=aluOut, sel=instruction[15], out=aInput);
+    ARegister(in=aInput, load=loadA, out=aValue, out[0..14]=addressM);
+
+    // The a-bit still selects A vs. M for both regular and extended
+    // computation instructions.
+    Mux16(a=aValue, b=inM, sel=instruction[12], out=aluY);
+
+    // D destination.
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=dValue);
+
+    // instruction[6..14] contains the extended ALU control bits.
+    ExtendAlu(
+        x=dValue,
+        y=aluY,
+        instruction=instruction[6..14],
+        out=aluOut,
+        out=outM,
+        zr=aluZero,
+        ng=aluNegative
+    );
+
+    // M destination.
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // Jump logic is identical to the standard CPU.
+    Not(in=aluZero, out=notZero);
+    Not(in=aluNegative, out=notNegative);
+    And(a=notZero, b=notNegative, out=aluPositive);
+
+    And(a=instruction[0], b=aluPositive, out=jumpIfPositive);
+    And(a=instruction[1], b=aluZero, out=jumpIfZero);
+    And(a=instruction[2], b=aluNegative, out=jumpIfNegative);
+
+    Or(a=jumpIfPositive, b=jumpIfZero, out=jumpPositiveOrZero);
+    Or(a=jumpPositiveOrZero, b=jumpIfNegative, out=jumpCondition);
+
+    And(a=instruction[15], b=jumpCondition, out=shouldJump);
+    Not(in=shouldJump, out=incrementPC);
+
+    PC(
+        in=aValue,
+        load=shouldJump,
+        inc=incrementPC,
+        reset=reset,
+        out[0..14]=pc
+    );
+}

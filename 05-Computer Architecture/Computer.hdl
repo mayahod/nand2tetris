@@ -1,0 +1,36 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/Computer.hdl
+
+/**
+ * The Hack computer, composed of CPU, instruction ROM, and data memory.
+ *
+ * The CPU's program counter addresses ROM32K. The fetched instruction is
+ * executed by the CPU, which may read from or write to the Memory chip.
+ */
+
+CHIP Computer {
+
+    IN reset;
+
+    PARTS:
+    ROM32K(address=pcValue, out=instruction);
+
+    CPU(
+        inM=memoryOut,
+        instruction=instruction,
+        reset=reset,
+        outM=cpuOut,
+        writeM=writeMemory,
+        addressM=memoryAddress,
+        pc=pcValue
+    );
+
+    Memory(
+        in=cpuOut,
+        load=writeMemory,
+        address=memoryAddress,
+        out=memoryOut
+    );
+}
